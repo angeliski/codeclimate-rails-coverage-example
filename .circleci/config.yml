@@ -1,0 +1,30 @@
+version: 2.1
+orbs:
+  ruby: circleci/ruby@1.1.4
+  
+jobs:
+  test:
+    docker:
+      - image: circleci/ruby:3.0.2-node
+        environment:
+          COVERAGE: 'true'
+    steps:
+      - checkout
+      - run:
+          name: Setup Code Climate test-reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      - ruby/install-deps
+      - run: yarn install
+      - run: ./cc-test-reporter before-build
+      - run: bundle exec rspec --profile 10
+      - run:
+          command: |
+            ./cc-test-reporter format-coverage -d -t simplecov -o coverage/upload.json
+            ./cc-test-reporter upload-coverage -d --input coverage/upload.json
+      
+workflows:
+  all-tests:
+    jobs:
+      - test
